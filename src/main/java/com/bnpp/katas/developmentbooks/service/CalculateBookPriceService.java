@@ -6,6 +6,7 @@ import com.bnpp.katas.developmentbooks.store.DiscountEnum;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class CalculateBookPriceService {
@@ -15,21 +16,34 @@ public class CalculateBookPriceService {
         Map<BooksEnum, Integer> bookCountMap = getBookCounts(bookRequest);
         List<Double> possiblePrices = new ArrayList<>();
 
-        for (int numberOfBooks = 3; numberOfBooks <= 5; numberOfBooks++) {
-            double totalPriceForBooks = calculateCombinationPrice(numberOfBooks,bookCountMap);
+        List<Integer> applicableDiscountSet = getApplicableDiscounts(bookCountMap.size());
+
+        applicableDiscountSet.forEach(discountSize -> {
+            double totalPriceForBooks = calculateCombinationPrice(discountSize,bookCountMap);
             possiblePrices.add(totalPriceForBooks);
-        }
+        });
 
         return possiblePrices.stream().min(Double::compare).orElse(0.0);
     }
 
-    private double calculateCombinationPrice(int numberOfBooks, Map<BooksEnum, Integer> bookCountMap) {
+    private List<Integer> getApplicableDiscounts(int numberOfBooks) {
+
+        List<Integer> applicableDiscounts = Arrays.stream(DiscountEnum.values())
+                .filter(level -> level.getNumberOfDistinctItems() <= numberOfBooks)
+                .map(DiscountEnum::getNumberOfDistinctItems).sorted(Comparator.reverseOrder())
+                .collect(Collectors.toList());
+
+        return applicableDiscounts.isEmpty() ? Collections.singletonList(1) : applicableDiscounts;
+
+    }
+
+    private double calculateCombinationPrice(int bookGroupSize, Map<BooksEnum, Integer> bookCountMap) {
         Map<BooksEnum, Integer> booksCount = new HashMap<> (bookCountMap);
         double totalPrice = 0.0;
 
         while (hasBooksLeft(booksCount)) {
 
-            List<BooksEnum> selectedBooks = selectBooks(booksCount,numberOfBooks);
+            List<BooksEnum> selectedBooks = selectBooks(booksCount,bookGroupSize);
             if (!selectedBooks.isEmpty()) {
                 double discount = getDiscount(selectedBooks.size());
                 double actualPrice = selectedBooks.size() * 50;
