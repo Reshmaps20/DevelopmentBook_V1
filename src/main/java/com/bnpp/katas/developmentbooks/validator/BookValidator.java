@@ -25,7 +25,16 @@ public class BookValidator {
                 .collect (Collectors.toList ());
 
         if (!invalidBookIds.isEmpty ()) {
-            throw new InvalidBookException ("Invalid book IDs : " + invalidBookIds);
+            throw new InvalidBookException ("Invalid Book IDs : " + invalidBookIds);
+        }
+
+        List<Integer> invalidQuantities = bookRequest.stream()
+                .map(BookRequest::getQuantity)
+                .filter(qty -> qty <= 0)
+                .collect(Collectors.toList());
+
+        if (!invalidQuantities.isEmpty()) {
+            throw new InvalidBookException("Invalid Book Quantities: " + invalidQuantities);
         }
     }
 }
