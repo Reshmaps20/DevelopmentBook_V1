@@ -28,7 +28,7 @@ public class CalculateBookPriceServiceTest {
         assertEquals(50.0, price);
     }
     @Test
-    @DisplayName ("Two different book purchase : 5% discount is applicable")
+    @DisplayName ("Two different book purchase with single copy: 5% discount is applicable")
     public void calculatePriceForTwoDifferentBookPurchase_ShouldApplyFivePercentDiscount() {
 
         List<BookRequest> bookRequests = Arrays.asList(new BookRequest(1, 1),new BookRequest(2, 1));
@@ -39,7 +39,7 @@ public class CalculateBookPriceServiceTest {
     }
 
     @Test
-    @DisplayName ("Three different book purchase : 10% discount is applicable")
+    @DisplayName ("Three different book purchase with single copy : 10% discount is applicable")
     public void calculatePriceForThreeDifferentBookPurchase_ShouldGive10PercentDiscount() {
 
         List<BookRequest> bookRequests = Arrays.asList(new BookRequest(1, 1),new BookRequest(2, 1),
@@ -63,7 +63,7 @@ public class CalculateBookPriceServiceTest {
     }
 
     @Test
-    @DisplayName ("Four different book purchase : 20% discount is applicable ")
+    @DisplayName ("Four different book purchase with single copy: 20% discount is applicable ")
     public void calculatePriceForFourDifferentBookPurchase_ShouldGive20PercentDiscount() {
 
         List<BookRequest> bookRequests = Arrays.asList(new BookRequest(1, 1),new BookRequest(2, 1),
@@ -72,5 +72,17 @@ public class CalculateBookPriceServiceTest {
         double price = calculateBookPriceService.calculatePrice(bookRequests);
 
         assertEquals(160.0, price);
+    }
+
+    @Test
+    @DisplayName ("Five different book purchase with single copy : 25% discount is applicable ")
+    public void calculatePriceForFiveDifferentBookPurchase_ShouldGive25PercentDiscount() {
+
+        List<BookRequest> bookRequests = Arrays.asList(new BookRequest(1, 1),new BookRequest(2, 1),
+                new BookRequest(3, 1), new BookRequest(4, 1), new BookRequest(5, 1));
+
+        double price = calculateBookPriceService.calculatePrice(bookRequests);
+
+        assertEquals(187.5, price);
     }
 }
