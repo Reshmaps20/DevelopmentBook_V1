@@ -23,7 +23,9 @@ public class CalculateBookPriceService {
 
         long uniqueBookCount = bookRequest.stream().map(BookRequest::getId).distinct().count();
 
-        if (uniqueBookCount == 2) {
+        if (uniqueBookCount == 3) {
+            discount = 0.10;
+        }else if (uniqueBookCount == 2) {
             discount = 0.05;
         }
 
