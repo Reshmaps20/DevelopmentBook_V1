@@ -12,13 +12,24 @@ public class CalculateBookPriceService {
 
     public double calculatePrice(List<BookRequest> bookRequest) {
 
-        double totalPrice = 0.0;
         Map<BooksEnum, Integer> bookCountMap = getBookCounts(bookRequest);
+        List<Double> possiblePrices = new ArrayList<>();
 
+        for (int numberOfBooks = 3; numberOfBooks <= 5; numberOfBooks++) {
+            double totalPriceForBooks = calculateCombinationPrice(numberOfBooks,bookCountMap);
+            possiblePrices.add(totalPriceForBooks);
+        }
+
+        return possiblePrices.stream().min(Double::compare).orElse(0.0);
+    }
+
+    private double calculateCombinationPrice(int numberOfBooks, Map<BooksEnum, Integer> bookCountMap) {
         Map<BooksEnum, Integer> booksCount = new HashMap<> (bookCountMap);
+        double totalPrice = 0.0;
+
         while (hasBooksLeft(booksCount)) {
 
-            List<BooksEnum> selectedBooks = selectBooks(booksCount);
+            List<BooksEnum> selectedBooks = selectBooks(booksCount,numberOfBooks);
             if (!selectedBooks.isEmpty()) {
                 double discount = getDiscount(selectedBooks.size());
                 double actualPrice = selectedBooks.size() * 50;
@@ -28,14 +39,17 @@ public class CalculateBookPriceService {
         return totalPrice;
     }
 
-    private List<BooksEnum> selectBooks(Map<BooksEnum, Integer> booksCount) {
+    private List<BooksEnum> selectBooks(Map<BooksEnum, Integer> booksCount, int numberOfBooks) {
         List<BooksEnum> selectedBooks = new ArrayList<>();
-        for (BooksEnum bookEnum : BooksEnum.values()) {
-            if (booksCount.getOrDefault(bookEnum, 0) > 0) {
-                selectedBooks.add(bookEnum);
-                booksCount.put(bookEnum, booksCount.get(bookEnum) - 1);
-            }
-        }
+
+        Arrays.stream(BooksEnum.values()).filter(bookEnum -> booksCount.getOrDefault(bookEnum, 0) > 0)
+                .forEach(bookEnum -> {
+                    if (selectedBooks.size() < numberOfBooks) {
+                        selectedBooks.add(bookEnum);
+                        booksCount.put(bookEnum, booksCount.get(bookEnum) - 1);
+                    }
+                });
+
         return selectedBooks;
     }
 
