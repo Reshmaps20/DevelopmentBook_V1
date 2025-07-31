@@ -1,6 +1,7 @@
 package com.bnpp.katas.developmentbooks.service;
 
 import com.bnpp.katas.developmentbooks.model.BookRequest;
+import com.bnpp.katas.developmentbooks.model.BookResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,9 +24,9 @@ public class CalculateBookPriceServiceTest {
 
         List<BookRequest> bookRequests = Arrays.asList(new BookRequest(1, 1));
 
-        double price = calculateBookPriceService.calculatePrice(bookRequests);
+        BookResponse price = calculateBookPriceService.calculatePrice(bookRequests);
 
-        assertEquals(50.0, price);
+        assertEquals(50.0, price.getFinalPrice ());
     }
     @Test
     @DisplayName ("Two different book purchase with single copy: 5% discount is applicable")
@@ -33,9 +34,9 @@ public class CalculateBookPriceServiceTest {
 
         List<BookRequest> bookRequests = Arrays.asList(new BookRequest(1, 1),new BookRequest(2, 1));
 
-        double price = calculateBookPriceService.calculatePrice(bookRequests);
+        BookResponse price = calculateBookPriceService.calculatePrice(bookRequests);
 
-        assertEquals(95.0, price);
+        assertEquals(95.0, price.getFinalPrice ());
     }
 
     @Test
@@ -45,9 +46,9 @@ public class CalculateBookPriceServiceTest {
         List<BookRequest> bookRequests = Arrays.asList(new BookRequest(1, 1),new BookRequest(2, 1),
                 new BookRequest(3, 1));
 
-        double price = calculateBookPriceService.calculatePrice(bookRequests);
+        BookResponse price = calculateBookPriceService.calculatePrice(bookRequests);
 
-        assertEquals(135.0, price);
+        assertEquals(135.0, price.getFinalPrice ());
     }
 
     @Test
@@ -57,9 +58,9 @@ public class CalculateBookPriceServiceTest {
         List<BookRequest> bookRequests = Arrays.asList(new BookRequest(1, 2),new BookRequest(2, 2),
                 new BookRequest(3, 1));
 
-        double price = calculateBookPriceService.calculatePrice(bookRequests);
+        BookResponse price = calculateBookPriceService.calculatePrice(bookRequests);
 
-        assertEquals(230.0, price);
+        assertEquals(230.0, price.getFinalPrice ());
     }
 
     @Test
@@ -69,9 +70,9 @@ public class CalculateBookPriceServiceTest {
         List<BookRequest> bookRequests = Arrays.asList(new BookRequest(1, 1),new BookRequest(2, 1),
                 new BookRequest(3, 1), new BookRequest(4, 1));
 
-        double price = calculateBookPriceService.calculatePrice(bookRequests);
+        BookResponse price = calculateBookPriceService.calculatePrice(bookRequests);
 
-        assertEquals(160.0, price);
+        assertEquals(160.0, price.getFinalPrice ());
     }
 
     @Test
@@ -81,9 +82,9 @@ public class CalculateBookPriceServiceTest {
         List<BookRequest> bookRequests = Arrays.asList(new BookRequest(1, 1),new BookRequest(2, 1),
                 new BookRequest(3, 1), new BookRequest(4, 1), new BookRequest(5, 1));
 
-        double price = calculateBookPriceService.calculatePrice(bookRequests);
+        BookResponse price = calculateBookPriceService.calculatePrice(bookRequests);
 
-        assertEquals(187.5, price);
+        assertEquals(187.5, price.getFinalPrice ());
     }
 
     @Test
@@ -93,8 +94,8 @@ public class CalculateBookPriceServiceTest {
         List<BookRequest> bookRequests = Arrays.asList(new BookRequest(1, 2),new BookRequest(2, 2),
                 new BookRequest(3, 2), new BookRequest(4, 1), new BookRequest(5, 1));
 
-        double price = calculateBookPriceService.calculatePrice(bookRequests);
+        BookResponse price = calculateBookPriceService.calculatePrice(bookRequests);
 
-        assertEquals(320.0, price);
+        assertEquals(320.0, price.getFinalPrice ());
     }
 }

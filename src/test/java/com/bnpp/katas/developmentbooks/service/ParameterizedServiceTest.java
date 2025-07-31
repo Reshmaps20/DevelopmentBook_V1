@@ -1,6 +1,7 @@
 package com.bnpp.katas.developmentbooks.service;
 
 import com.bnpp.katas.developmentbooks.model.BookRequest;
+import com.bnpp.katas.developmentbooks.model.BookResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -25,9 +26,9 @@ public class ParameterizedServiceTest {
     @DisplayName ("Parameterized Test : Various Book Purchase")
     public void calculatePriceParameterizedTest(List<BookRequest> bookRequests, double expectedPrice) {
 
-        double actualPrice = calculateBookPriceService.calculatePrice(bookRequests);
+        BookResponse actualPrice = calculateBookPriceService.calculatePrice(bookRequests);
 
-        assertEquals(expectedPrice, actualPrice);
+        assertEquals(expectedPrice, actualPrice.getFinalPrice ());
     }
 
     private static Stream<Arguments> getBookPurchaseList() {

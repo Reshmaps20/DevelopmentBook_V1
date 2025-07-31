@@ -1,32 +1,75 @@
 package com.bnpp.katas.developmentbooks.service;
 
+import com.bnpp.katas.developmentbooks.model.BookGroup;
 import com.bnpp.katas.developmentbooks.model.BookRequest;
+import com.bnpp.katas.developmentbooks.model.BookResponse;
 import com.bnpp.katas.developmentbooks.store.BooksEnum;
 import com.bnpp.katas.developmentbooks.store.DiscountEnum;
+import com.bnpp.katas.developmentbooks.validator.BookValidator;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class CalculateBookPriceService {
 
-    public double calculatePrice(List<BookRequest> bookRequest) {
+    private final BookValidator bookValidator;
+
+    public BookResponse calculatePrice(List<BookRequest> bookRequest) {
+
+        bookValidator.validateBooks(bookRequest);
 
         Map<BooksEnum, Integer> bookCountMap = getBookCounts(bookRequest);
-        List<Double> possiblePrices = new ArrayList<>();
+        List<Integer> applicableDiscountSet = getApplicableDiscountSet(bookCountMap.size());
+        Map<Double, List<BookGroup>> priceToGroupMap = calculateTotalPrice (applicableDiscountSet,bookCountMap);
 
-        List<Integer> applicableDiscountSet = getApplicableDiscounts(bookCountMap.size());
-
-        applicableDiscountSet.forEach(discountSize -> {
-            double totalPriceForBooks = calculateCombinationPrice(discountSize,bookCountMap);
-            possiblePrices.add(totalPriceForBooks);
-        });
-
-        return possiblePrices.stream().min(Double::compare).orElse(0.0);
+        return findMinimumPriceResponse(priceToGroupMap);
     }
 
-    private List<Integer> getApplicableDiscounts(int numberOfBooks) {
+    private Map<Double, List<BookGroup>> calculateTotalPrice (List<Integer> applicableDiscountSet,Map<BooksEnum, Integer> bookCountMap) {
+
+        Map<Double, List<BookGroup>> totalBookPrices = applicableDiscountSet.stream()
+                .flatMap(discountSize -> calculateCombinationPrice(discountSize,bookCountMap)
+                        .entrySet().stream()).collect(Collectors.toMap(
+                                Map.Entry::getKey, Map.Entry::getValue, (existing, replacement) -> existing
+                ));
+
+        return totalBookPrices;
+    }
+
+    private BookResponse findMinimumPriceResponse(Map<Double, List<BookGroup>> totalPrices) {
+
+        Optional<Double> minPrice = totalPrices.keySet().stream().reduce(Double::min);
+        List<BookGroup> associatedBookGroups = totalPrices.get(minPrice.get());
+
+        return createBookResponse(associatedBookGroups, minPrice.get());
+    }
+
+    private BookResponse createBookResponse(List<BookGroup> bookGroups, double finalPrice) {
+
+        double actualPrice = calculateActualPrice(bookGroups);
+        double totalDiscount = calculateTotalDiscount(bookGroups);
+
+        return BookResponse.builder()
+                .listOfBookGroups(bookGroups)
+                .actualPrice(actualPrice)
+                .totalDiscount(totalDiscount)
+                .finalPrice(finalPrice)
+                .build();
+    }
+
+    private double calculateTotalDiscount(List<BookGroup> bookGroups) {
+        return bookGroups.stream().mapToDouble(BookGroup::getDiscountAmount).sum();
+    }
+
+    private double calculateActualPrice(List<BookGroup> bookGroups) {
+        return bookGroups.stream().mapToDouble(BookGroup::getActualPrice).sum();
+    }
+
+    private List<Integer> getApplicableDiscountSet(int numberOfBooks) {
 
         List<Integer> applicableDiscounts = Arrays.stream(DiscountEnum.values())
                 .filter(level -> level.getNumberOfDistinctItems() <= numberOfBooks)
@@ -34,31 +77,56 @@ public class CalculateBookPriceService {
                 .collect(Collectors.toList());
 
         return applicableDiscounts.isEmpty() ? Collections.singletonList(1) : applicableDiscounts;
-
     }
 
-    private double calculateCombinationPrice(int bookGroupSize, Map<BooksEnum, Integer> bookCountMap) {
-        Map<BooksEnum, Integer> booksCount = new HashMap<> (bookCountMap);
-        double totalPrice = 0.0;
+    private Map<Double, List<BookGroup>> calculateCombinationPrice(int bookGroupSize,Map<BooksEnum, Integer> OriginalBooksCount) {
 
-        while (hasBooksLeft(booksCount)) {
+        Map<BooksEnum, Integer> booksCount = new HashMap<>(OriginalBooksCount);
+        Map<Double, List<BookGroup>> priceToGroupMap = new HashMap<>();
+        List<BookGroup> bookGroups = new ArrayList<>();
+        double[] totalPrice =new double[1];
+        processBooks(booksCount, bookGroupSize, bookGroups, totalPrice);
+        priceToGroupMap.put(totalPrice[0], bookGroups);
+        return priceToGroupMap;
+    }
 
-            List<BooksEnum> selectedBooks = selectBooks(booksCount,bookGroupSize);
-            if (!selectedBooks.isEmpty()) {
-                double discount = getDiscount(selectedBooks.size());
-                double actualPrice = selectedBooks.size() * 50;
-                totalPrice += actualPrice * (1 - discount);
-            }
+    private void processBooks(Map<BooksEnum, Integer> booksCount, int bookGroupSize, List<BookGroup> bookGroups, double[] totalPrice) {
+
+        if (!hasBooksLeft(booksCount)) {
+            return;
         }
-        return totalPrice;
+
+        List<BooksEnum> selectedBooks = selectBooks(booksCount, bookGroupSize);
+        if (!selectedBooks.isEmpty()) {
+
+            double discount = getDiscount(selectedBooks.size());
+            double actualPrice = selectedBooks.size() * DiscountEnum.PRICE;
+            totalPrice[0] += actualPrice * (1 - discount);
+            bookGroups.add(createBookGroup(selectedBooks, discount, actualPrice));
+
+            processBooks(booksCount, bookGroupSize, bookGroups, totalPrice);
+        }
     }
 
-    private List<BooksEnum> selectBooks(Map<BooksEnum, Integer> booksCount, int numberOfBooks) {
+    private BookGroup createBookGroup(List<BooksEnum> selectedBooks, double discount, double actualPrice) {
+
+        return BookGroup.builder()
+                .bookIds (selectedBooks.stream().map(BooksEnum::getId).collect(Collectors.toList()))
+                .numberOfBooks(selectedBooks.size())
+                .discountPercentage(discount * 100)
+                .actualPrice(actualPrice)
+                .discountAmount(actualPrice * discount)
+                .finalGroupPrice(actualPrice - (actualPrice * discount))
+                .build();
+    }
+
+    private List<BooksEnum> selectBooks(Map<BooksEnum, Integer> booksCount, int bookGroupSize) {
+
         List<BooksEnum> selectedBooks = new ArrayList<>();
 
         Arrays.stream(BooksEnum.values()).filter(bookEnum -> booksCount.getOrDefault(bookEnum, 0) > 0)
                 .forEach(bookEnum -> {
-                    if (selectedBooks.size() < numberOfBooks) {
+                    if (selectedBooks.size() < bookGroupSize) {
                         selectedBooks.add(bookEnum);
                         booksCount.put(bookEnum, booksCount.get(bookEnum) - 1);
                     }
@@ -67,14 +135,14 @@ public class CalculateBookPriceService {
         return selectedBooks;
     }
 
-
-    private boolean hasBooksLeft(Map<BooksEnum, Integer> booksCount) {
-        return booksCount.values().stream().anyMatch(count -> count > 0);
+    private boolean hasBooksLeft(Map<BooksEnum, Integer> bookCountsCopy) {
+        return bookCountsCopy.values().stream().anyMatch(count -> count > 0);
     }
 
     private Map<BooksEnum, Integer> getBookCounts(List<BookRequest> bookRequest) {
 
-        Map<BooksEnum, Integer> bookCounts = new LinkedHashMap<> ();
+        Map<BooksEnum, Integer> bookCounts = new LinkedHashMap<>();
+
         bookRequest.forEach(request -> {
             BooksEnum book = BooksEnum.values()[request.getId() - 1];
             bookCounts.put(book, request.getQuantity());
@@ -83,7 +151,7 @@ public class CalculateBookPriceService {
         return bookCounts;
     }
 
-    private double getDiscount(int uniqueBookCount) {
+    public static double getDiscount(int uniqueBookCount) {
         return Arrays.stream(DiscountEnum.values())
                 .filter(discount -> discount.getNumberOfDistinctItems() == uniqueBookCount)
                 .map(DiscountEnum::getDiscountPercentage).findFirst().orElse(0.0);
