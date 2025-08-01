@@ -1,6 +1,7 @@
 package com.bnpp.katas.developmentbooks.controller;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.bnpp.katas.developmentbooks.model.BookRequest;
@@ -15,6 +16,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -35,6 +37,17 @@ public class BookStoreControllerTest {
         List<BookRequest> bookRequests = Arrays.asList(new BookRequest(1, 1),new BookRequest(2, 1));
 
         mockMvc.perform(post("/api/bookstore/calculateprice").contentType(MediaType.APPLICATION_JSON)
-                .content(new ObjectMapper ().writeValueAsString(bookRequests))).andExpect(status().isOk());
+                .content(new ObjectMapper ().writeValueAsString(bookRequests))).andExpect(status().isOk())
+                .andExpect(jsonPath ("$.finalPrice").exists());
+    }
+
+    @Test
+    @DisplayName ("Rest API : empty request should throw exception")
+    void calculatePriceApiWithEmptyRequest_shouldReturn_StatusBadRequest() throws Exception {
+
+        List<BookRequest> emptyRequest = new ArrayList<> ();
+
+        mockMvc.perform(post("/api/bookstore/calculateprice").contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper ().writeValueAsString(emptyRequest))).andExpect(status().isBadRequest ());
     }
 }

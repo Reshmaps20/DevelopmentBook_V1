@@ -1,11 +1,13 @@
 package com.bnpp.katas.developmentbooks.controller;
 
+import com.bnpp.katas.developmentbooks.exception.InvalidBookException;
 import com.bnpp.katas.developmentbooks.model.BookRequest;
 import com.bnpp.katas.developmentbooks.model.BookResponse;
 import com.bnpp.katas.developmentbooks.service.CalculateBookPriceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,6 +24,9 @@ public class BookStoreController {
 
     @PostMapping("/calculateprice")
     public ResponseEntity<BookResponse> calculatePrice(@RequestBody List<BookRequest> request) {
-        return new ResponseEntity<> (calculateBookPriceService.calculatePrice (request), HttpStatus.OK);
+        if (!CollectionUtils.isEmpty(request)) {
+            return new ResponseEntity<> (calculateBookPriceService.calculatePrice (request), HttpStatus.OK);
+        }
+        throw new InvalidBookException ("Invalid book request");
     }
 }
